@@ -23,6 +23,6 @@
         </span>
     </div>
 {% else %}
-    No score is submitted yet.
+No score is submitted yet. <a href="{% url leaderboard_api game=game  %}">Use API to create some</a>
 {% endif %}
 {% endwith %}

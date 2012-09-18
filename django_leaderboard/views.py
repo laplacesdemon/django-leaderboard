@@ -19,7 +19,11 @@ def highscores(request, game, page=1):
     page = int(page)
     leaderboard = Leaderboard(game)
     scores = leaderboard.leaders(int(page))
+    if not scores:
+        scores = []
     total_pages = int(leaderboard.total_pages())
+
+    # Pagination values
     has_next = True if (page < total_pages) else False
     has_prev = True if (page != 1) else False
     next_page = page + 1 if has_next else page
