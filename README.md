@@ -34,8 +34,7 @@ Installation
   * Run `python manage.py runserver` to test it out.
 
     url(r'^leaderboard/', include('django_leaderboard.urls')),
-    # auth support for rest framework
-    url(r'^restframework', include('djangorestframework.urls', namespace='djangorestframework'))
+    url(r'^restframework', include('djangorestframework.urls', namespace='djangorestframework')) # auth support for rest framework
     
 Usage
 -----
