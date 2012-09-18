@@ -16,21 +16,3 @@ class SimpleTest(TestCase):
         """
         self.assertEqual(1 + 1, 2)
 
-class ViewTest(TestCase):
-    fixtures = ['users.json']
-
-    def setUp(self):
-        self.leaderboard_g1 = Leaderboard('game1')
-        self.leaderboard_g2 = Leaderboard('game2')
-
-        #get the users
-        joan = User.objects.get(username='joan')
-        mads = User.objects.get(username='mads')
-
-    def test_listing_high_scores(self):
-        # create some records
-        self.leaderboard_g1.rank_member(joan.pk, 10)
-        self.leaderboard_g1.rank_member(mads.pk, 4)
-        self.leaderboard_g1.rank_member(joan.pk, 16)
-        self.leaderboard_g1.rank_member(mads.pk, 20)
-

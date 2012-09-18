@@ -1,66 +1,121 @@
-from django.views.decorators.http import require_http_methods
-from django.contrib.auth.decorators import login_required
-from decorators import json_view
 from leaderboard import Leaderboard
+from django_leaderboard.forms import ScoreForm
 
-def leaderboard_high_scores(request, game, page=1):
-    """
-    the html view for leaderboards
-    """
-    pass
+from djangorestframework.reverse import reverse
+from djangorestframework.views import View
+from djangorestframework.response import Response
+from djangorestframework import status
 
-@json_view
-def api_leaderboard_high_scores(request, game, page=1):
-    """
-    the list of high scores
-    """
-    lb = Leaderboard(game)
-    scores = lb.leaders(int(page))
+from django.contrib.auth.models import User
+from django.shortcuts import render_to_response
+from django.template import RequestContext
 
-    # Return empty array if no records found
-    return scores if (scores) else []
+def highscores(request, game, page=1):
+    """
+    displays the leaderboard table
+    """
+    # You can set the default page size 
+    #Leaderboard.DEFAULT_PAGE_SIZE = 2
+    page = int(page)
+    leaderboard = Leaderboard(game)
+    scores = leaderboard.leaders(int(page))
+    total_pages = int(leaderboard.total_pages())
+    has_next = True if (page < total_pages) else False
+    has_prev = True if (page != 1) else False
+    next_page = page + 1 if has_next else page
+    prev_page = page - 1 if has_prev else page
 
-@json_view
-def api_leaderboard_for_user(request, username, game):
-    """
-    The scores around the user's high score
-    """
-    user = User.objects.get(username=username)
-    lb = Leaderboard(game)
-    scores = lb.around_me(user.pk)
-    return scores if (scores) else []
+    # hashmap to get the score instance quickly
+    score_list = {}
 
-@login_required
-@require_http_methods(["POST"])
-def api_create_score(request):
-    """
-    Json api for creating high score
+    # Collect the user ids
+    user_ids = []
+    for score in scores:
+        user_ids.append(score["member"])
+        score_list[int(score["member"])] = score
 
-    Params:
-        user_id: user's primary key
-        game: game identifier
-        score: integer score
-    """
-    user_id = request.POST.get('user_id')
-    game = request.POST.get('game')
-    score = request.POST.get('score')
-    user = User.objects.get(pk=user_id)
-    lb = Leaderboard(game)
-    success = lb.rank_mamber(user.pk, score)
-    return {"result": success}
+    # Fetch users in question
+    users = User.objects.filter(pk__in=user_ids)
 
-#@login_required
-@require_http_methods(["POST"])
-def api_update_score(request):
-    """
-    Json api for updating score
-    """
-    pass
+    for user in users:
+        score_list[user.pk]["user"] = user
 
-@login_required
-@require_http_methods(["POST"])
-def api_delete_score(request):
+    return render_to_response("django_leaderboard/highscores.html", 
+            {
+                "scores": scores, 
+                "total_pages":total_pages, 
+                "game":game, 
+                "page":page, 
+                'has_next': has_next, 
+                'has_prev': has_prev, 
+                'next_page': next_page,
+                'prev_page': prev_page,
+            }, 
+             context_instance=RequestContext(request))
+
+
+class ScoresView(View):
     """
-    Json api for deleting the score
+    The resource to manage scores on the leaderboard
     """
-    pass
+    
+    form = ScoreForm
+
+    def get(self, request, game, page=1):
+        """
+        Returns the high scores
+        @todo: pagination
+        """
+        leaderboard = Leaderboard(game)
+        scores = leaderboard.leaders(int(page))
+        total_pages = leaderboard.total_pages()
+        return {
+                "meta":
+                {
+                    "total_pages":int(total_pages)
+                }, 
+                "scores":scores if scores else []
+                }
+
+    def post(self, request, game, page=1):
+        """
+        Creates new rankings
+
+        Params:
+            game: game identifier
+            user_id: pk of the user
+            score: positive integer
+
+        Returns:
+            1 on creation, 0 on updation
+        """
+        user_id = request.POST.get('user_id')
+        score = request.POST.get('score')
+        
+        try:
+            user = User.objects.get(pk=user_id)
+        except:
+            return Response(404, 'User Not Found')
+
+        leaderboard = Leaderboard(game)
+        status = leaderboard.rank_member(user.id, int(score))
+        return  {"status": status}
+
+    def delete(self, request, game, page=1):
+        """
+        deletes the score
+        """
+        pass
+
+class ScoresAroundMeView(View):
+    def get(self, request, game, user_id):
+        """
+        Returns the scores around the user
+        """
+        leaderboard = Leaderboard(game)
+        scores = leaderboard.around_me(user_id)
+
+        return {
+                "meta":{}, 
+                "scores":scores if scores else []
+                }

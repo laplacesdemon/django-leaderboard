@@ -1,0 +1,28 @@
+<h1>High Scores</h1>
+{% with total_scores=scores|length %}
+{% if total_scores > 0 %}
+    <ul>
+        {% for score in scores %}
+        <li>{{ score.rank }}) {{ score.user.username }} - {{ score.score }} points</li>
+        {% endfor %}
+    </ul>
+    <div class="pagination">
+        <span class="step-links">
+        {% if has_prev %}
+            <a href="{% url leaderboard_high_scores_with_page game=game page=prev_page  %}">previous</a>
+        {% endif %}
+
+        <span class="current">
+            Page {{ page }} of {{ total_pages }}.
+        </span>
+
+        <span class="step-links">
+        {% if has_next %}
+            <a href="{% url leaderboard_high_scores_with_page game=game page=next_page  %}">next</a>
+        {% endif %}
+        </span>
+    </div>
+{% else %}
+    No score is submitted yet.
+{% endif %}
+{% endwith %}
