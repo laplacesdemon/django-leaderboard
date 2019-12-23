@@ -1,7 +1,7 @@
 Django==1.11.23
 URLObject==2.0.2
 distribute==0.6.27
-djangorestframework==0.4.0
+djangorestframework==3.9.1
 hiredis==0.1.1
 leaderboard==1.1.6
 python-dateutil==1.5
